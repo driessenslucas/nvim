@@ -6,9 +6,9 @@
 
 ## Showcase
 
-![Homepage]('showcase/homepage.png')
+![Homepage](showcase/homepage.png)
 
-![Notebooks]('showcase/notebooks.png')
+![Notebooks](showcase/notebooks.png)
 
 ## Install Instructions
 
