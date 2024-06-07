@@ -1,4 +1,4 @@
--- Define necessary functions and variables
+
 _G.molten_warn = function(msg, level, opts)
   vim.notify("[Molten] " .. msg, level or vim.log.levels.WARN, opts)
 end
@@ -114,16 +114,118 @@ _G.run_line = function()
   send(cell)
 end
 
--- Set up a keybinding to run the current line
-vim.api.nvim_set_keymap("n", "<leader>rl", ":lua run_line()<CR>", { noremap = true, silent = true })
+-- Define the function to run a selected range
+_G.run_range = function()
+  local lang = get_valid_repl_lang()
+  if not lang then
+    return
+  end
 
--- Set up a keybinding to run the current cell
-vim.api.nvim_set_keymap(
-  "n",
-  "<leader>rc",
-  ':lua run_cell({ from = {vim.fn.line(".") - 1, 0}, to = {vim.fn.line("."), 0} })<CR>',
-  { noremap = true, silent = true }
-)
+  local buf = vim.api.nvim_get_current_buf()
+  local start_pos = vim.fn.getpos("'<")
+  local end_pos = vim.fn.getpos("'>")
+
+  local cell = {
+    lang = lang,
+    range = { from = { start_pos[2] - 1, 0 }, to = { end_pos[2], 0 } },
+    text = vim.api.nvim_buf_get_lines(buf, start_pos[2] - 1, end_pos[2], false),
+  }
+
+  send(cell)
+end
+
+-- Define the function to move to the next cell
+_G.move_to_next_cell = function()
+  local buf = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local pos = vim.api.nvim_win_get_cursor(0)[1] - 1
+  for i = pos + 1, #lines do
+    if lines[i]:match("^```{.*}$") then
+      vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+      return
+    end
+  end
+  molten_warn("No more cells found.")
+end
+
+-- Define the function to move to the previous cell
+_G.move_to_previous_cell = function()
+  local buf = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local pos = vim.api.nvim_win_get_cursor(0)[1] - 1
+  for i = pos - 1, 1, -1 do
+    if lines[i]:match("^```{.*}$") then
+      vim.api.nvim_win_set_cursor(0, { i + 1, 0 })
+      return
+    end
+  end
+  molten_warn("No previous cells found.")
+end
+
+-- Define the function to run the cell above
+_G.run_all_above = function()
+  local buf = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local pos = vim.api.nvim_win_get_cursor(0)[1] - 1
+  local start_pos, end_pos
+
+  for i = pos - 1, 1, -1 do
+    if lines[i]:match("^```{.*}$") then
+      start_pos = i
+      break
+    end
+  end
+
+  if not start_pos then
+    start_pos = 0
+  end
+
+  end_pos = pos
+
+  local range = {
+    from = { start_pos, 0 },
+    to = { end_pos, 0 }
+  }
+
+  run_cell(range)
+end
+
+-- Define the function to run the cell below
+_G.run_all_below = function()
+  local buf = vim.api.nvim_get_current_buf()
+  local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+  local pos = vim.api.nvim_win_get_cursor(0)[1] - 1
+  local start_pos, end_pos
+
+  start_pos = pos
+
+  for i = pos + 1, #lines do
+    if lines[i]:match("^```{.*}$") then
+      end_pos = i
+      break
+    end
+  end
+
+  if not end_pos then
+    end_pos = #lines
+  end
+
+  local range = {
+    from = { start_pos, 0 },
+    to = { end_pos, 0 }
+  }
+
+  run_cell(range)
+end
+
+-- Set up keybindings
+vim.api.nvim_set_keymap("n", "<leader>rl", ":lua run_line()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>rc", ':lua run_cell({ from = {vim.fn.line(".") - 1, 0}, to = {vim.fn.line("."), 0} })<CR>', { noremap = true, silent = true })
+vim.api.nvim_set_keymap("v", "<leader>rr", ":lua run_range()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>mn", ":lua move_to_next_cell()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>mp", ":lua move_to_previous_cell()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>ra", ":lua run_all_above()<CR>", { noremap = true, silent = true })
+vim.api.nvim_set_keymap("n", "<leader>rb", ":lua run_all_below()<CR>", { noremap = true, silent = true })
 
 -- Ensure otk is required correctly
 local ok, otk_module = pcall(require, "otter.keeper")
