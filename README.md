@@ -1,4 +1,3 @@
-
 # Neovim Config for Data Science / ML (.ipynb Support)
 
 <a href="https://dotfyle.com/driessenslucas/nvim"><img src="https://dotfyle.com/driessenslucas/nvim/badges/plugins?style=flat" /></a>
@@ -10,20 +9,60 @@
 ![Homepage](showcase/homepage.png)
 ![Notebooks](showcase/notebooks.png)
 
-## Install Instructions
+## Setup Instructions
 
 > Install requires Neovim 0.9+. Always review the code before installing a configuration.
 
-Clone the repository and install the plugins:
+### Clone the Repository
 
 ```sh
-git clone git@github.com:driessenslucas/nvim ~/.config/driessenslucas/nvim
+git clone https://github.com/driessenslucas/nvim.git ~/.config/nvim
 ```
 
-Open Neovim with this config:
+### Install Dependencies
+
+Run the following commands to install all necessary dependencies:
 
 ```sh
-NVIM_APPNAME=driessenslucas/nvim/ nvim
+# Update package list and upgrade packages
+sudo apt-get update
+sudo apt-get upgrade -y
+
+# Install essential packages
+sudo apt-get install -y nodejs npm luajit ripgrep libmagickwand-dev libgraphicsmagick1-dev luarocks
+
+# Install Python packages
+pip install pyperclip plotly kaleido nbformat pillow cairosvg jupyter-client pynvim jupytext jupyter matplotlib
+
+# Install ImageMagick and Luarocks dependencies
+luarocks install magick --local --lua-version=5.1
+
+# Determine the Luarocks installation path
+LUAROCKS_PATH=$(luarocks path --lr-path)
+LUAROCKS_CPATH=$(luarocks path --lr-cpath)
+```
+
+### Update Neovim Configuration
+
+Add the Luarocks paths to your Neovim configuration:
+
+```sh
+# Create Neovim configuration file if it doesn't exist
+NVIM_CONFIG_PATH="$HOME/.config/nvim/init.lua"
+mkdir -p $(dirname "$NVIM_CONFIG_PATH")
+touch "$NVIM_CONFIG_PATH"
+
+# Update Neovim configuration
+echo 'lua << EOF' >> "$NVIM_CONFIG_PATH"
+echo "package.path = package.path .. ';${LUAROCKS_PATH//;/\\;}'" >> "$NVIM_CONFIG_PATH"
+echo "package.cpath = package.cpath .. ';${LUAROCKS_CPATH//;/\\;}'" >> "$NVIM_CONFIG_PATH"
+echo 'EOF' >> "$NVIM_CONFIG_PATH"
+```
+
+### Open Neovim with the Config
+
+```sh
+NVIM_APPNAME=driessenslucas/nvim nvim
 ```
 
 ## Plugins
